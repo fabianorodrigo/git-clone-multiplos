@@ -4,17 +4,16 @@ const readlineSync = require("readline-sync");
 const axios = require("axios");
 const shell = require("shelljs");
 
-const username = readlineSync.question(`Username em gitlab.ancine.gov.br: `);
-const token = readlineSync.question(
-  `Informe o token do gitlab.ancine.gov.br: `,
-  {
-    hideEchoBack: true, // The typed text on screen is hidden by `*` (default).
-  }
-);
+const gitlabUrl = process.env.GITLAB_URL;
+
+const username = readlineSync.question(`Username em ${gitlabUrl}: `);
+const token = readlineSync.question(`Informe o token do ${gitlabUrl}: `, {
+  hideEchoBack: true, // The typed text on screen is hidden by `*` (default).
+});
 const filtroGrupo = readlineSync.question(`Filtrar projetos com path: `);
 
 const protocol = "https://";
-const domain = `gitlab.ancine.gov.br/api/v4/projects?search=${filtroGrupo}&access_token=${token}&per_page=100&page=`; //máximo do per_page é 100
+const domain = `${gitlabUrl}/api/v4/projects?search=${filtroGrupo}&access_token=${token}&per_page=100&page=`; //máximo do per_page é 100
 let pageNumber = 1;
 
 if (!fs.existsSync("workdir")) {

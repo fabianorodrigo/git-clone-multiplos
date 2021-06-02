@@ -1,0 +1,16 @@
+{
+  "name": "gitvarios",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Fabiano Nascimento",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.21.0",
+    "readline-sync": "^1.4.10",
+    "shelljs": "^0.8.4"
+  }
+}

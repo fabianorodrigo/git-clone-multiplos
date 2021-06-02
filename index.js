@@ -4,12 +4,17 @@ const readlineSync = require("readline-sync");
 const axios = require("axios");
 const shell = require("shelljs");
 
-const gitlabUrl = process.env.GITLAB_URL;
-
-const username = readlineSync.question(`Username em ${gitlabUrl}: `);
-const token = readlineSync.question(`Informe o token do ${gitlabUrl}: `, {
-  hideEchoBack: true, // The typed text on screen is hidden by `*` (default).
-});
+const gitlabUrl = process.env.GITLAB_URL
+  ? process.env.GITLAB_URL
+  : readlineSync.question(`Domínio git/gitlab (URL sem o protocolo): `);
+const username = process.env.GITLAB_USERNAME
+  ? process.env.GITLAB_USERNAME
+  : readlineSync.question(`Username em ${gitlabUrl}: `);
+const token = process.env.GITLAB_TOKEN
+  ? process.env.GITLAB_TOKEN
+  : readlineSync.question(`Informe o token do ${gitlabUrl}: `, {
+      hideEchoBack: true, // The typed text on screen is hidden by `*` (default).
+    });
 const filtroGrupo = readlineSync.question(`Filtrar projetos com path: `);
 
 const protocol = "https://";

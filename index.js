@@ -33,12 +33,12 @@ function buscaClonaRepositorios(numeroPagina) {
     const obj = response.data; ///JSON.parse(response.data);
     shell.cd("./workdir");
     obj.forEach(async (prj, i) => {
-      console.log(i, prj.name_with_namespace);
+      console.log(i, prj.path_with_namespace.replace(/\//g, "_"));
       try {
         shell.exec(
           `git clone ${protocol}${username}:${token}@${prj.http_url_to_repo.substr(
             8
-          )}`
+          )} ${prj.path_with_namespace.replace(/\//g, "_")}`
         );
       } catch (e) {
         console.error(`Falha ao clonar`, e);

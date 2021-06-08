@@ -5,8 +5,12 @@ const readlineSync = require("readline-sync");
 const shell = require("shelljs");
 const getBranches = require("./getBranches");
 const getTags = require("./getTags");
+const getRefsCommit = require("./getRefsCommit");
 const getRepositorios = require("./getRepositorios");
 const salvaObjToCSV = require("./salvaObjToCSV");
+
+const REGEXP_RC = /^v(\d{1,3})\.(\d{1,3})\.\d{1,4}\-RC\d{1,}$/;
+const REGEXP_FINAL = /^v(\d{1,3})\.(\d{1,3})\.\d{1,4}$/;
 
 (async function () {
   const gitlabUrl = process.env.GITLAB_URL
@@ -53,7 +57,7 @@ async function report(gitlabUrl, token, filtroGrupo) {
  * @param {*} r Objeto repositório retornado pela API Gitlab
  */
 async function pushRepoInfo(retorno, r, gitlabUrl, token) {
-  const obj = {};
+  const obj = { id: r.id };
   await pushTagData(obj, "develop", gitlabUrl, token, r.id);
   const branchesMaster = await pushTagData(
     obj,
@@ -69,12 +73,48 @@ async function pushRepoInfo(retorno, r, gitlabUrl, token) {
     obj.ultimaTag = tags.length > 0 ? tags[0].name : undefined;
     const tagFinal = getUltimaTagFinal(tags);
     obj.ultimaTagFinal = tagFinal ? tagFinal.name : undefined;
+    // tag final está no mesmo ponto de commit do master? (esperado: TRUE)
     obj.mesmoCommitMaster =
       tagFinal && branchesMaster.length > 0
         ? tagFinal.commitId == branchesMaster[0].commit.id
         : undefined;
     const tagRC = getUltimaTagRC(tags);
     obj.ultimaTagRC = tagRC ? tagRC.name : undefined;
+    // qual a relação do commit da última tag final com a última tag RC?
+    // Quando uma RC corresponde exatamente à tag final, o esperado é que o commit da RC está tanto na RC quanto na tag final.
+    // Caso a última tag RC gerada já seja de uma próxima versão a entrar ainda, aí o commit da última tag Final vai estar em ambas
+    obj["Final x RC"] = null;
+    if (tagFinal != null && tagRC != null) {
+      const refsCommitTagRC = await getRefsCommit(
+        gitlabUrl,
+        token,
+        r.id,
+        tagRC.commitId,
+        "tag"
+      );
+      if (
+        refsCommitTagRC.find((t) => t.name == tagRC.name) &&
+        refsCommitTagRC.find((t) => t.name == tagFinal.name)
+      ) {
+        obj["Final x RC"] = "Final contém RC";
+      } else {
+        const refsCommitTagFinal = await getRefsCommit(
+          gitlabUrl,
+          token,
+          r.id,
+          tagFinal.commitId,
+          "tag"
+        );
+        if (
+          refsCommitTagFinal.find((t) => t.name == tagFinal.name) &&
+          refsCommitTagFinal.find((t) => t.name == tagFinal.name)
+        ) {
+          obj["Final x RC"] = "RC contém Final";
+        } else {
+          obj["Final x RC"] = "SEM CONEXÃO!!!";
+        }
+      }
+    }
   } else {
     console.log(
       "Repositório sem master ou develop:",
@@ -96,7 +136,7 @@ async function pushTagData(obj, tagName, gitlabUrl, token, id) {
 
 function getUltimaTagFinal(tags) {
   for (let i = 0; i < tags.length; i++) {
-    if (tags[i].name.indexOf("RC") == -1 && tags[i].name.indexOf(".") > -1) {
+    if (REGEXP_FINAL.test(tags[i].name)) {
       return { i, name: tags[i].name, commitId: tags[i].commit.id };
     }
   }
@@ -104,7 +144,7 @@ function getUltimaTagFinal(tags) {
 
 function getUltimaTagRC(tags) {
   for (let i = 0; i < tags.length; i++) {
-    if (tags[i].name.indexOf("RC") != -1 && tags[i].name.indexOf(".") > -1) {
+    if (REGEXP_RC.test(tags[i].name)) {
       return { i, name: tags[i].name, commitId: tags[i].commit.id };
     }
   }

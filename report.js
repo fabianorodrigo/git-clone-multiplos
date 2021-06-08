@@ -35,33 +35,47 @@ async function report(gitlabUrl, token, filtroGrupo) {
 
   const repos = await getRepositorios(gitlabUrl, token, filtroGrupo);
 
-  for (const r of repos) {
-    const obj = {};
-    await pushTagData(obj, "develop", gitlabUrl, token, r.id);
-    const branchesMaster = await pushTagData(
-      obj,
-      "master",
-      gitlabUrl,
-      token,
-      r.id
-    );
-    if (obj.develop != null || obj.master != null) {
-      retorno[r.path_with_namespace] = obj;
-      //tags
-      const tags = await getTags(gitlabUrl, token, r.id);
-      obj.ultimaTag = tags.length > 0 ? tags[0].name : undefined;
-      const tagFinal = getUltimaTagFinal(tags);
-      obj.ultimaTagFinal = tagFinal ? tagFinal.name : undefined;
-      obj.mesmoCommitMaster =
-        tagFinal && branchesMaster.length > 0
-          ? tagFinal.commitId == branchesMaster[0].commit.id
-          : undefined;
-      const tagRC = getUltimaTagRC(tags);
-      obj.ultimaTagRC = tagRC ? tagRC.name : undefined;
-    }
-  }
+  await Promise.all(
+    repos.map(async (r) => {
+      await pushRepoInfo(retorno, r, gitlabUrl, token);
+    })
+  );
 
   return retorno;
+}
+
+/**
+ * Com base nos dados do repositório {r} e informações sobre ele que serão solicitadas
+ * à API Gitlab, inclui no objeto {retorno} uma chave com o "path_with_namespace" do
+ * repositório um compilado das infos obtidas
+ * @param {*} retorno Objeto onde será inserida dados do repositório
+ * @param {*} r Objeto repositório retornado pela API Gitlab
+ */
+async function pushRepoInfo(retorno, r, gitlabUrl, token) {
+  const obj = {};
+  await pushTagData(obj, "develop", gitlabUrl, token, r.id);
+  const branchesMaster = await pushTagData(
+    obj,
+    "master",
+    gitlabUrl,
+    token,
+    r.id
+  );
+  if (obj.develop != null || obj.master != null) {
+    retorno[r.path_with_namespace] = obj;
+    console.log(r.path_with_namespace);
+    //tags
+    const tags = await getTags(gitlabUrl, token, r.id);
+    obj.ultimaTag = tags.length > 0 ? tags[0].name : undefined;
+    const tagFinal = getUltimaTagFinal(tags);
+    obj.ultimaTagFinal = tagFinal ? tagFinal.name : undefined;
+    obj.mesmoCommitMaster =
+      tagFinal && branchesMaster.length > 0
+        ? tagFinal.commitId == branchesMaster[0].commit.id
+        : undefined;
+    const tagRC = getUltimaTagRC(tags);
+    obj.ultimaTagRC = tagRC ? tagRC.name : undefined;
+  }
 }
 
 async function pushTagData(obj, tagName, gitlabUrl, token, id) {

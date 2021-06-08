@@ -11,6 +11,7 @@ const salvaObjToCSV = require("./salvaObjToCSV");
 
 const REGEXP_RC = /^v(\d{1,3})\.(\d{1,3})\.\d{1,4}\-RC\d{1,}$/;
 const REGEXP_FINAL = /^v(\d{1,3})\.(\d{1,3})\.\d{1,4}$/;
+const REGEXP_RELEASE_BRACH = /^OS(\d{1,3})SP(\d{1,3})$/;
 
 (async function () {
   const gitlabUrl = process.env.GITLAB_URL
@@ -66,7 +67,7 @@ async function pushRepoInfo(retorno, r, gitlabUrl, token) {
     token,
     r.id
   );
-  if (obj.develop != null || obj.master != null) {
+  if (r.empty_repo === false && r.archived === false) {
     retorno[r.path_with_namespace] = obj;
     //tags
     const tags = await getTags(gitlabUrl, token, r.id);
@@ -80,21 +81,38 @@ async function pushRepoInfo(retorno, r, gitlabUrl, token) {
         : undefined;
     const tagRC = getUltimaTagRC(tags);
     obj.ultimaTagRC = tagRC ? tagRC.name : undefined;
-    // qual a relação do commit da última tag final com a última tag RC?
-    // Quando uma RC corresponde exatamente à tag final, o esperado é que o commit da RC está tanto na RC quanto na tag final.
-    // Caso a última tag RC gerada já seja de uma próxima versão a entrar ainda, aí o commit da última tag Final vai estar em ambas
-    obj["Final x RC"] = null;
-    if (tagFinal != null && tagRC != null) {
-      const refsCommitTagRC = await getRefsCommit(
+    // releases branches
+    obj["Releases Branches"] = null;
+    let refsTagCommitTagRC = null;
+    if (tagRC != null) {
+      refsTagCommitTagRC = await getRefsCommit(
         gitlabUrl,
         token,
         r.id,
         tagRC.commitId,
         "tag"
       );
+      const refsBranchCommitTagRC = await getRefsCommit(
+        gitlabUrl,
+        token,
+        r.id,
+        tagRC.commitId,
+        "branch"
+      );
+      obj["Releases Branches"] = refsBranchCommitTagRC
+        .filter((t) => REGEXP_RELEASE_BRACH.test(t.name))
+        .map((t) => t.name)
+        ?.join();
+    }
+
+    // qual a relação do commit da última tag final com a última tag RC?
+    // Quando uma RC corresponde exatamente à tag final, o esperado é que o commit da RC está tanto na RC quanto na tag final.
+    // Caso a última tag RC gerada já seja de uma próxima versão a entrar ainda, aí o commit da última tag Final vai estar em ambas
+    obj["Final x RC"] = null;
+    if (tagFinal != null && tagRC != null) {
       if (
-        refsCommitTagRC.find((t) => t.name == tagRC.name) &&
-        refsCommitTagRC.find((t) => t.name == tagFinal.name)
+        refsTagCommitTagRC.find((t) => t.name == tagRC.name) &&
+        refsTagCommitTagRC.find((t) => t.name == tagFinal.name)
       ) {
         obj["Final x RC"] = "Final contém RC";
       } else {
@@ -115,12 +133,12 @@ async function pushRepoInfo(retorno, r, gitlabUrl, token) {
         }
       }
     }
-  } else {
+  } /* else {
     console.log(
       "Repositório sem master ou develop:",
       colors.yellow(r.path_with_namespace)
     );
-  }
+  }*/
 }
 
 async function pushTagData(obj, tagName, gitlabUrl, token, id) {

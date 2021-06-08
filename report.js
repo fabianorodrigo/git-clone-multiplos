@@ -1,5 +1,6 @@
 const fs = require("fs");
 const path = require("path");
+const colors = require("colors");
 const readlineSync = require("readline-sync");
 const shell = require("shelljs");
 const getBranches = require("./getBranches");
@@ -63,7 +64,6 @@ async function pushRepoInfo(retorno, r, gitlabUrl, token) {
   );
   if (obj.develop != null || obj.master != null) {
     retorno[r.path_with_namespace] = obj;
-    console.log(r.path_with_namespace);
     //tags
     const tags = await getTags(gitlabUrl, token, r.id);
     obj.ultimaTag = tags.length > 0 ? tags[0].name : undefined;
@@ -75,6 +75,11 @@ async function pushRepoInfo(retorno, r, gitlabUrl, token) {
         : undefined;
     const tagRC = getUltimaTagRC(tags);
     obj.ultimaTagRC = tagRC ? tagRC.name : undefined;
+  } else {
+    console.log(
+      "Repositório sem master ou develop:",
+      colors.yellow(r.path_with_namespace)
+    );
   }
 }
 

@@ -81,6 +81,8 @@ async function pushRepoInfo(retorno, r, gitlabUrl, token) {
         : undefined;
     const tagRC = getUltimaTagRC(tags);
     obj.ultimaTagRC = tagRC ? tagRC.name : undefined;
+    // RC mergeada para develop
+    obj["RC mergeada p/ 'develop'"] = null;
     // releases branches
     obj["Releases Branches"] = null;
     let refsTagCommitTagRC = null;
@@ -99,6 +101,8 @@ async function pushRepoInfo(retorno, r, gitlabUrl, token) {
         tagRC.commitId,
         "branch"
       );
+      obj["RC mergeada p/ 'develop'"] =
+        refsBranchCommitTagRC.filter((t) => t.name == "develop").length > 0;
       obj["Releases Branches"] = refsBranchCommitTagRC
         .filter((t) => REGEXP_RELEASE_BRACH.test(t.name))
         .map((t) => t.name)

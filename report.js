@@ -27,9 +27,9 @@ const REGEXP_RELEASE_BRACH = /^OS(\d{1,3})SP(\d{1,3})$/;
       });
   const filtroGrupo = readlineSync.question(`Filtrar projetos com path: `);
 
-  const protocol = "https://";
-  const domain = `${gitlabUrl}/api/v4/projects?search=${filtroGrupo}&access_token=${token}&per_page=100&page=`; //máximo do per_page é 100
-  let pageNumber = 1;
+  if (!fs.existsSync("workdir")) {
+    fs.mkdirSync("workdir");
+  }
 
   const dados = await report(gitlabUrl, token, filtroGrupo);
   console.table(dados);
@@ -40,7 +40,6 @@ async function report(gitlabUrl, token, filtroGrupo) {
   const retorno = {};
 
   const repos = await getRepositorios(gitlabUrl, token, filtroGrupo);
-
   await Promise.all(
     repos.map(async (r) => {
       await pushRepoInfo(retorno, r, gitlabUrl, token);
@@ -58,7 +57,7 @@ async function report(gitlabUrl, token, filtroGrupo) {
  * @param {*} r Objeto repositório retornado pela API Gitlab
  */
 async function pushRepoInfo(retorno, r, gitlabUrl, token) {
-  const obj = { id: r.id };
+  const obj = {id: r.id};
   await pushTagData(obj, "develop", gitlabUrl, token, r.id);
   const branchesMaster = await pushTagData(
     obj,
@@ -159,7 +158,7 @@ async function pushTagData(obj, tagName, gitlabUrl, token, id) {
 function getUltimaTagFinal(tags) {
   for (let i = 0; i < tags.length; i++) {
     if (REGEXP_FINAL.test(tags[i].name)) {
-      return { i, name: tags[i].name, commitId: tags[i].commit.id };
+      return {i, name: tags[i].name, commitId: tags[i].commit.id};
     }
   }
 }
@@ -167,7 +166,7 @@ function getUltimaTagFinal(tags) {
 function getUltimaTagRC(tags) {
   for (let i = 0; i < tags.length; i++) {
     if (REGEXP_RC.test(tags[i].name)) {
-      return { i, name: tags[i].name, commitId: tags[i].commit.id };
+      return {i, name: tags[i].name, commitId: tags[i].commit.id};
     }
   }
 }

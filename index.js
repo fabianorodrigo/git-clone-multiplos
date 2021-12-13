@@ -3,29 +3,52 @@ const path = require("path");
 const readlineSync = require("readline-sync");
 const axios = require("axios");
 const shell = require("shelljs");
+const colors = require("colors");
 
-const gitlabUrl = process.env.GITLAB_URL
-  ? process.env.GITLAB_URL
-  : readlineSync.question(`Domínio git/gitlab (URL sem o protocolo): `);
-const username = process.env.GITLAB_USERNAME
-  ? process.env.GITLAB_USERNAME
-  : readlineSync.question(`Username em ${gitlabUrl}: `);
-const token = process.env.GITLAB_TOKEN
-  ? process.env.GITLAB_TOKEN
-  : readlineSync.question(`Informe o token do ${gitlabUrl}: `, {
-      hideEchoBack: true, // The typed text on screen is hidden by `*` (default).
-    });
-const filtroGrupo = readlineSync.question(`Filtrar projetos com path: `);
+const reportBranchsTags = require("./reportBranchesTags");
+const reportCommits = require("./reportCommits");
 
-const protocol = "https://";
-const domain = `${gitlabUrl}/api/v4/projects?search=${filtroGrupo}&access_token=${token}&per_page=100&page=`; //máximo do per_page é 100
-let pageNumber = 1;
+(async function () {
+  const gitlabUrl = process.env.GITLAB_URL
+    ? process.env.GITLAB_URL
+    : readlineSync.question(`Domínio git/gitlab (URL sem o protocolo): `);
+  const username = process.env.GITLAB_USERNAME
+    ? process.env.GITLAB_USERNAME
+    : readlineSync.question(`Username em ${gitlabUrl}: `);
+  const token = process.env.GITLAB_TOKEN
+    ? process.env.GITLAB_TOKEN
+    : readlineSync.question(`Informe o token do ${gitlabUrl}: `, {
+        hideEchoBack: true, // The typed text on screen is hidden by `*` (default).
+      });
+  const filtroGrupo = readlineSync.question(`Filtrar projetos com path: `);
 
-if (!fs.existsSync("workdir")) {
-  fs.mkdirSync("workdir");
-}
+  const protocol = "https://";
+  const domain = `${gitlabUrl}/api/v4/projects?search=${filtroGrupo}&access_token=${token}&per_page=100&page=`; //máximo do per_page é 100
+  let pageNumber = 1;
+  if (!fs.existsSync("workdir")) {
+    fs.mkdirSync("workdir");
+  }
 
-buscaClonaRepositorios(1);
+  console.log(colors.yellow("1. Clonar repositórios múltiplos"));
+  console.log(colors.yellow("2. Relatório branches e tags"));
+  console.log(colors.yellow("3. Relatório commits"));
+  console.log("");
+  console.log(colors.yellow("0. Sair"));
+
+  let opcao = readlineSync.question(`Escolha uma opção: `);
+
+  switch (opcao.trim()) {
+    case "1":
+      buscaClonaRepositorios(1);
+    case "2": {
+      await reportBranchsTags(gitlabUrl, token, filtroGrupo);
+    }
+    case "3":
+      await reportCommits(gitlabUrl, token, filtroGrupo);
+    default:
+      process.exit();
+  }
+})();
 
 function buscaClonaRepositorios(numeroPagina) {
   let url = protocol.concat(domain, numeroPagina);

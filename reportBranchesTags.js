@@ -13,28 +13,15 @@ const REGEXP_RC = /^v(\d{1,3})\.(\d{1,3})\.\d{1,4}\-RC\d{1,}$/;
 const REGEXP_FINAL = /^v(\d{1,3})\.(\d{1,3})\.\d{1,4}$/;
 const REGEXP_RELEASE_BRACH = /^OS(\d{1,3})SP(\d{1,3})$/;
 
-(async function () {
-  const gitlabUrl = process.env.GITLAB_URL
-    ? process.env.GITLAB_URL
-    : readlineSync.question(`Domínio git/gitlab (URL sem o protocolo): `);
-  const username = process.env.GITLAB_USERNAME
-    ? process.env.GITLAB_USERNAME
-    : readlineSync.question(`Username em ${gitlabUrl}: `);
-  const token = process.env.GITLAB_TOKEN
-    ? process.env.GITLAB_TOKEN
-    : readlineSync.question(`Informe o token do ${gitlabUrl}: `, {
-        hideEchoBack: true, // The typed text on screen is hidden by `*` (default).
-      });
-  const filtroGrupo = readlineSync.question(`Filtrar projetos com path: `);
-
-  if (!fs.existsSync("workdir")) {
-    fs.mkdirSync("workdir");
-  }
-
+module.exports = async function reportBranchsTags(
+  gitlabUrl,
+  token,
+  filtroGrupo
+) {
   const dados = await report(gitlabUrl, token, filtroGrupo);
   console.table(dados);
-  salvaObjToCSV(dados, "reportRepos.csv");
-})();
+  salvaObjToCSV(dados, "reportBranchesTagsRepos.csv");
+};
 
 async function report(gitlabUrl, token, filtroGrupo) {
   const retorno = {};

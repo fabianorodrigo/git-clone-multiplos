@@ -131,6 +131,12 @@ async function buscaClonaRepositorios(
     }
   });
   if (obj.length == 100) {
-    buscaClonaRepositorios(protocol, username, token, domain, numeroPagina + 1);
+    await buscaClonaRepositorios(
+      protocol,
+      username,
+      token,
+      domain,
+      numeroPagina + 1
+    );
   }
 }

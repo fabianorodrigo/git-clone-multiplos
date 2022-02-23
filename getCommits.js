@@ -15,8 +15,9 @@ module.exports = async function getCommits(
   idRepositorio,
   since
 ) {
-  const endpointURL = `https://${gitlabUrl}/api/v4/projects/${idRepositorio}/repository/commits/?all=true${
+  const endpointURL = `https://${gitlabUrl}/api/v4/projects/${idRepositorio}/repository/commits/?all=true&with_stats=true${
     since ? `&since=${since}` : ""
   }`;
-  return await getDadosAPI(endpointURL, token);
+  const commits = await getDadosAPI(endpointURL, token);
+  return commits.sort((a, b) => (a.created_at > b.created_at ? 1 : -1));
 };

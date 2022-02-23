@@ -1,13 +1,20 @@
 const fs = require("fs");
 const path = require("path");
 
-module.exports = function salvaObjToCSV(obj, nomeArquivo) {
+module.exports = function salvaObjToCSV(
+  obj,
+  nomeArquivo,
+  ordenaColunas = false
+) {
   let conteudo = "";
 
   let colunas = [];
   //percorre todos as propriedades (repositorios) para identificar todas as colunas
   for (const repo of Object.keys(obj)) {
-    for (const coluna of Object.keys(obj[repo])) {
+    const cols = ordenaColunas
+      ? Object.keys(obj[repo]).sort()
+      : Object.keys(obj[repo]);
+    for (const coluna of cols) {
       if (!colunas.includes(coluna)) {
         colunas.push(coluna);
       }
